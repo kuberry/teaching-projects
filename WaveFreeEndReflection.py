@@ -17,7 +17,7 @@ def initialCondition(x):
     return numpy.maximum(0,-numpy.absolute(10*x-5)+.5)
 
 # Spatial discretization
-numPoints = 301;
+numPoints = 101;
 
 # Visual Parameters
 # How long the movie should play over
@@ -25,7 +25,7 @@ displayTime = 3.0;
 framesPerSecond = 30;
 
 # Wave Speed
-c = 1.53;
+c = 1.0;
 finalTime = 1.0;
 
 # Domain Dimensions
@@ -34,10 +34,11 @@ xMax = 1;
 
 # Calculate mesh size and time step size 
 h = float(xMax-xMin)/(numPoints-1);
-# Time step needed to be stable
-dt = 2*h/(c*numpy.pi); 
+# Time step needed to be stable.
+# The O(h^2) is due to the Neumann boundary conditions.
+dt = 2*h**2/(c*numpy.pi); 
 numTimeSteps = float(finalTime)/dt;
-numTimeSteps = numpy.ceil(numTimeSteps); 
+numTimeSteps = numpy.ceil(numTimeSteps);  
 # Recompute time steps so that we come out evenly at final time
 dt = float(finalTime)/numTimeSteps;
 
@@ -84,7 +85,8 @@ for i in xrange(0,int(numTimeSteps),1):
     #
     #                 u_tt = c * u_xx 
     #
-    
+    y_n[0] = (4*y_n[1]-y_n[2])/3.0;
+    y_n[int(numPoints)-1] = (4*y_n[int(numPoints)-2]-y_n[int(numPoints)-3])/3.0;
     for j in xrange(1,int(numPoints)-1,1):
         y_n[j] = 2*y_nm1[j] - y_nm2[j] + (dt**2)*(c**2)*(1./(h**2))*(y_nm1[j+1]-2*y_nm1[j]+y_nm1[j-1]);
 

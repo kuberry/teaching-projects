@@ -1,0 +1,146 @@
+import numpy
+import scipy
+import matplotlib
+import matplotlib.pyplot as plt
+import time
+
+# This code performs a 1-d simulation of a wave
+# via the finite difference method using an
+# explicit, centered, first-order accurate time
+# scheme and a centered, second-order spatial
+# discretization.
+# 
+# Author: Paul Kuberry, 2014
+
+
+def trueSolution(x,t):
+    return numpy.sin(t)*numpy.sin(4*x);
+
+def generateRightHandSide(c,x,t):
+    # Give      u_tt - c^2 * u_xx
+    # where     u is trueSolution()
+    return (16*(c**2)-1)*numpy.sin(t)*numpy.sin(4*x);
+
+# Spatial discretization
+numPoints = 301;
+
+# Visual Parameters
+# How long the movie should play over
+displayTime = 3.0;
+framesPerSecond = 30;
+
+# Wave Speed
+c = 6.0;
+finalTime = 2*numpy.pi;
+
+# Domain Dimensions
+xMin = 0;
+xMax = numpy.pi;
+
+# Calculate mesh size and time step size 
+h = float(xMax-xMin)/(numPoints-1);
+# Time step needed to be stable.
+dt = 2*h/(c*numpy.pi); 
+numTimeSteps = float(finalTime)/dt;
+numTimeSteps = numpy.ceil(numTimeSteps);  
+# Recompute time steps so that we come out evenly at final time
+dt = float(finalTime)/numTimeSteps;
+
+# Initialize vectors used to store solutions
+x = numpy.linspace(xMin,xMax,numPoints);
+# Solution at time step n
+y_n = trueSolution(x,0);
+# Solution at time step n - 1
+y_nm1 = trueSolution(x,-dt);
+# Solution at time step n - 2
+y_nm2 = trueSolution(x,-2*dt);
+
+# Prepare Matplotlib for interactive plotting
+matplotlib.use('TkAgg');
+plt.ion();
+fig = plt.figure();
+# Plot the initial condition
+ax, = plt.plot(x,y_n,lw=2);
+plt.xlabel('x-axis');
+plt.ylabel('y-axis');
+plt.title('Wave Simulation, t=0');
+# Reset the y-axis limits based on the assumption that the wave will travel
+plt.ylim(-1,1);
+plt.show();
+# Determine how often to plot the solution so that the movie lasts $displayTime seconds
+# Note: If the spatial discretization is fine, this may take longer that #displayTime
+# seconds to show, and you may wish to comment out the time.sleep() call.
+numPlotUpdates = max(1,numpy.floor(numTimeSteps/(displayTime*framesPerSecond)));
+plotTimeDelay = displayTime/(numTimeSteps/numPlotUpdates);
+
+for i in xrange(0,int(numTimeSteps),1):
+    # Computation centered around previous time step
+    currentTime = i*dt;
+
+    # Discretize in time with u_tt ~= (u_n-2u_nm1+u_nm2)/dt^2
+    #                and with u_xx ~= (u_nm1(x+h)-2u_nm1(x)+u_nm1(x-h))/h^2
+    #
+    # On the end points we need a second order accurate difference
+    # formula     u_xx ~= (-u_nm1(x+2h)+4u_nm1(x+h)-3u_nm1(x))/2h
+    # where x is left end point, and
+    #
+    #                 u_tt = c * u_xx 
+    #
+    f = generateRightHandSide(c,x,currentTime);
+    for j in xrange(1,int(numPoints)-1,1):
+        y_n[j] = 2*y_nm1[j] - y_nm2[j] + (dt**2)*(c**2)*(1./(h**2))*(y_nm1[j+1]-2*y_nm1[j]+y_nm1[j-1]);
+        y_n[j] += (dt**2)*f[j];
+
+    # Assign Dirichlet boundary conditions at the end points
+    y_n[0] = trueSolution(x[0],currentTime);
+    y_n[int(numPoints)-1] = trueSolution(x[int(numPoints)-1],currentTime);
+        
+    # Update previous two time step solutions    
+    y_nm2[:] = y_nm1;
+    y_nm1[:] = y_n;
+
+    # Plotting logic 
+    if numpy.mod(i,numpy.ceil(numTimeSteps/(displayTime*framesPerSecond)))==0:
+        ax.set_ydata(y_n);
+        plt.title("Wave Simulation, t=%0.2f" % (currentTime+dt));
+        fig.canvas.draw()
+        #time.sleep(plotTimeDelay) 
+        #time.sleep(numpy.max(1./(displayTime*framesPerSecond),1./numTimeSteps))
+        
+    
+    
+        
+    
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# bx = plt.gca();
+# bx.relim();
+# bx.autoscale();
+# Trigger emacs to run this script using the "compile" command
+# ;;; Local Variables: ***
+# ;;; compile-command: "python StandingWave.py" ***
+# ;;; end: ***
